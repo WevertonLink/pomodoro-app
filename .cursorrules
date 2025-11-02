@@ -1,0 +1,62 @@
+# Pomodoro App - Cursor Rules
+
+## Project Context
+Building a premium Pomodoro Timer PWA with React + Vite + TypeScript, focusing on modern UI/UX, cloud sync, task management, and productivity analytics.
+
+## Tech Stack
+- Framework: React 18 + Vite + TypeScript (strict mode)
+- Styling: Tailwind CSS + shadcn/ui components
+- State Management: Jotai (atomic state)
+- Animations: Framer Motion
+- Storage: LocalStorage with migration path to Supabase
+- Audio: Custom sound library with Web Audio API
+- PWA: vite-plugin-pwa with Workbox
+- Router: React Router v6
+- Date Utils: date-fns
+
+## Core Principles
+
+### 1. Component Architecture
+- Use functional components with TypeScript
+- Keep components small and focused (< 150 lines)
+- Use barrel exports (index.ts) for clean imports
+
+### 2. TypeScript Standards
+- Always define explicit types, avoid 'any'
+- Use const assertions for constants
+- Prefer type over interface for unions/primitives
+
+### 3. Jotai State Management
+- Use atomic state pattern with atomWithStorage for persistence
+- Create derived atoms for computed values
+
+### 4. shadcn/ui Usage
+- Always use provided shadcn components from /components/ui
+- Customize via className, never modify component source
+
+### 5. Accessibility
+- Always include ARIA labels
+- Keyboard navigation support
+- Screen reader announcements
+
+### 6. Performance
+- Lazy load routes with React.lazy()
+- Memoize expensive calculations
+- Use CSS animations over JS when possible
+
+## What NOT to Do
+❌ DO NOT use class components
+❌ DO NOT use inline styles (use Tailwind)
+❌ DO NOT mutate state directly
+❌ DO NOT ignore TypeScript errors
+❌ DO NOT use 'any' type
+❌ DO NOT modify files I didn't ask you to change
+❌ DO NOT add features I didn't request
+
+## File Naming
+- Components: PascalCase (TimerDisplay.tsx)
+- Hooks: camelCase with 'use' prefix (useTimer.ts)
+- Utils: camelCase (formatTime.ts)
+- Stores: kebab-case (timer-store.ts)
+
+REMEMBER: Only change what was explicitly requested!
