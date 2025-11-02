@@ -8,11 +8,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'robots.txt', 'sounds/*.mp3'],
+      includeAssets: ['favicon.ico', 'sounds/*.mp3'],
       manifest: {
         name: 'Pomodoro Pro',
         short_name: 'Pomodoro',
-        description: 'Premium Pomodoro Timer with task management and analytics',
+        description: 'Premium Pomodoro Timer',
         theme_color: '#ef4444',
         background_color: '#ffffff',
         display: 'standalone',
@@ -29,6 +29,9 @@ export default defineConfig({
             type: 'image/png'
           }
         ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3}']
       }
     })
   ],
