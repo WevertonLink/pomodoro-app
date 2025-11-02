@@ -1,5 +1,5 @@
 interface CircularProgressProps {
-  progress: number // 0 a 100
+  progress: number
   size?: number
   strokeWidth?: number
   color?: string
@@ -7,9 +7,9 @@ interface CircularProgressProps {
 
 export function CircularProgress({ 
   progress, 
-  size = 280, 
-  strokeWidth = 8,
-  color = 'currentColor'
+  size = 320, 
+  strokeWidth = 12,
+  color = '#ef4444'
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
@@ -21,7 +21,7 @@ export function CircularProgress({
       height={size} 
       className="transform -rotate-90"
     >
-      {/* Background circle */}
+      {/* Background circle (track) */}
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -29,8 +29,9 @@ export function CircularProgress({
         stroke="currentColor"
         strokeWidth={strokeWidth}
         fill="none"
-        className="text-muted opacity-20"
+        className="text-muted opacity-10"
       />
+      
       {/* Progress circle */}
       <circle
         cx={size / 2}
@@ -42,10 +43,28 @@ export function CircularProgress({
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         strokeLinecap="round"
-        className="transition-all duration-300 ease-out"
+        className="transition-all duration-500 ease-out"
         style={{ 
-          stroke: color,
-          filter: 'drop-shadow(0 0 8px currentColor)'
+          filter: 'drop-shadow(0 0 12px currentColor)',
+          opacity: 0.9
+        }}
+      />
+      
+      {/* Glow effect */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={color}
+        strokeWidth={strokeWidth / 2}
+        fill="none"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        className="transition-all duration-500 ease-out"
+        style={{ 
+          filter: 'blur(8px)',
+          opacity: 0.4
         }}
       />
     </svg>

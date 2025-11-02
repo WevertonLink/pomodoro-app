@@ -30,75 +30,87 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Pomodoro Pro</CardTitle>
-              <CardDescription>Sessão #{timerState.currentSession}</CardDescription>
+              <CardTitle className="text-2xl">Pomodoro Pro</CardTitle>
+              <CardDescription className="text-base">Sessão #{timerState.currentSession}</CardDescription>
             </div>
-            <Badge variant={getModeVariant()}>
+            <Badge variant={getModeVariant()} className="text-sm px-3 py-1">
               {getModeLabel()}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center gap-6">
-            {/* Circular Progress com Timer */}
-            <div className="relative flex items-center justify-center">
+        <CardContent className="space-y-8">
+          {/* Circular Progress com Timer DENTRO */}
+          <div className="flex items-center justify-center py-4">
+            <div className="relative">
               <CircularProgress 
                 progress={progress} 
-                size={280}
-                strokeWidth={8}
+                size={320}
+                strokeWidth={12}
                 color={getModeColor()}
               />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-7xl font-bold tabular-nums tracking-tight">
+              {/* Timer centralizado DENTRO do círculo */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-8xl font-bold tabular-nums tracking-tight">
                   {formatTime(timerState.timeRemaining)}
+                </div>
+                <div className="text-sm text-muted-foreground mt-2">
+                  {Math.round(progress)}% completo
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="text-sm text-muted-foreground">
-              🍅 {timerState.completedPomodoros} pomodoros completos
+          {/* Stats */}
+          <div className="text-center">
+            <div className="text-lg text-muted-foreground">
+              🍅 <span className="font-semibold text-foreground">{timerState.completedPomodoros}</span> pomodoros completos hoje
             </div>
+          </div>
 
-            <div className="flex gap-2 w-full">
-              <Button 
-                size="lg" 
-                className="flex-1"
-                onClick={toggle}
-              >
-                {timerState.isRunning ? (
-                  <>
-                    <Pause className="mr-2 h-4 w-4" />
-                    Pausar
-                  </>
-                ) : (
-                  <>
-                    <Play className="mr-2 h-4 w-4" />
-                    Iniciar
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={reset}
-                disabled={timerState.isRunning}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={skip}
-              >
-                <SkipForward className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Controls */}
+          <div className="flex gap-3">
+            <Button 
+              size="lg" 
+              className="flex-1 h-14 text-lg"
+              onClick={toggle}
+            >
+              {timerState.isRunning ? (
+                <>
+                  <Pause className="mr-2 h-5 w-5" />
+                  Pausar
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-5 w-5" />
+                  Iniciar
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={reset}
+              disabled={timerState.isRunning}
+              className="h-14 px-6"
+              title="Resetar"
+            >
+              <RotateCcw className="h-5 w-5" />
+            </Button>
+            
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={skip}
+              className="h-14 px-6"
+              title="Pular"
+            >
+              <SkipForward className="h-5 w-5" />
+            </Button>
           </div>
         </CardContent>
       </Card>
