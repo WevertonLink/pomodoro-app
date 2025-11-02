@@ -3,39 +3,42 @@ import { useAtom } from 'jotai'
 import { timerStateAtom } from '../store/timer-store'
 import { settingsAtom } from '../store/settings-store'
 import { soundManager } from '../lib/sounds'
+import { useStats } from './useStats'
 
 export function useTimer() {
   const [timerState, setTimerState] = useAtom(timerStateAtom)
   const [settings] = useAtom(settingsAtom)
+  const { recordPomodoroComplete, recordBreakComplete } = useStats()
 
-  // Solicitar permissão para notificações na primeira montagem
   useEffect(() => {
     soundManager.requestNotificationPermission()
   }, [])
 
-  // Atualizar volume do som quando settings mudar
   useEffect(() => {
     soundManager.setVolume(settings.soundVolume)
     soundManager.setEnabled(settings.soundEnabled)
   }, [settings.soundVolume, settings.soundEnabled])
 
-  // Countdown logic
   useEffect(() => {
     if (!timerState.isRunning) return
 
     const interval = setInterval(() => {
       setTimerState((prev) => {
         if (prev.timeRemaining <= 0) {
-          // Timer finished - play sound and show notification
           const isWorkSession = prev.mode === 'work'
           
+          // Registrar estatísticas quando completar sessão
           if (isWorkSession) {
+            recordPomodoroComplete(settings.workDuration)
             soundManager.play('work-end')
             soundManager.showNotification(
               'Sessão de Foco Completa! 🎉',
-              'Hora de fazer uma pausa!'
+              `Você focou por ${settings.workDuration} minutos!`
             )
           } else {
+            recordBreakComplete(
+              prev.mode === 'break' ? settings.breakDuration : settings.longBreakDuration
+            )
             soundManager.play('break-end')
             soundManager.showNotification(
               'Pausa Terminada! 💪',
@@ -43,9 +46,14 @@ export function useTimer() {
             )
           }
 
+          // Auto-start próxima sessão se configurado
+          const shouldAutoStart = isWorkSession 
+            ? settings.autoStartBreaks 
+            : settings.autoStartPomodoros
+
           return {
             ...prev,
-            isRunning: false,
+            isRunning: shouldAutoStart,
             timeRemaining: 0,
           }
         }
@@ -58,7 +66,13 @@ export function useTimer() {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [timerState.isRunning, setTimerState])
+  }, [
+    timerState.isRunning, 
+    setTimerState, 
+    settings, 
+    recordPomodoroComplete, 
+    recordBreakComplete
+  ])
 
   const start = useCallback(() => {
     const isStarting = !timerState.isRunning && timerState.timeRemaining > 0
@@ -128,7 +142,6 @@ export function useTimer() {
     }
   }, [timerState.isRunning, start, pause])
 
-  // Calcular progresso (0-100)
   const getProgress = useCallback(() => {
     const totalTime = timerState.mode === 'work'
       ? settings.workDuration * 60

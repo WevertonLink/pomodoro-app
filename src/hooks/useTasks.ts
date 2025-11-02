@@ -1,11 +1,13 @@
 import { useAtom } from 'jotai'
 import { tasksAtom, activeTaskIdAtom, categoriesAtom } from '../store/tasks-store'
+import { useStats } from './useStats'
 import type { Task } from '../types/task'
 
 export function useTasks() {
   const [tasks, setTasks] = useAtom(tasksAtom)
   const [activeTaskId, setActiveTaskId] = useAtom(activeTaskIdAtom)
   const [categories] = useAtom(categoriesAtom)
+  const { recordTaskComplete } = useStats()
 
   const addTask = (task: Omit<Task, 'id' | 'createdAt' | 'completedPomodoros' | 'completed'>) => {
     const newTask: Task = {
@@ -35,6 +37,8 @@ export function useTasks() {
       completed: true, 
       completedAt: new Date().toISOString() 
     })
+    // Registrar nas estatísticas
+    recordTaskComplete()
   }
 
   const incrementTaskPomodoro = (id: string) => {

@@ -5,11 +5,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useTimer } from './hooks/useTimer'
 import { useTasks } from './hooks/useTasks'
 import { formatTime } from './lib/utils'
-import { Play, Pause, RotateCcw, SkipForward, Timer as TimerIcon, ListTodo, Settings, X } from 'lucide-react'
+import { 
+  Play, 
+  Pause, 
+  RotateCcw, 
+  SkipForward, 
+  Timer as TimerIcon, 
+  ListTodo, 
+  Settings, 
+  BarChart3,
+  X 
+} from 'lucide-react'
 import { CircularProgress } from './components/timer/CircularProgress'
 import { TaskList } from './components/tasks/TaskList'
 import { AddTaskDialog } from './components/tasks/AddTaskDialog'
 import { SettingsPanel } from './components/settings/SettingsPanel'
+import { StatsPanel } from './components/stats/StatsPanel'
 import { useEffect } from 'react'
 
 function App() {
@@ -66,7 +77,7 @@ function App() {
         </div>
 
         <Tabs defaultValue="timer" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="timer">
               <TimerIcon className="mr-2 h-4 w-4" />
               Timer
@@ -74,6 +85,10 @@ function App() {
             <TabsTrigger value="tasks">
               <ListTodo className="mr-2 h-4 w-4" />
               Tarefas ({pendingTasks.length})
+            </TabsTrigger>
+            <TabsTrigger value="stats">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Stats
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="mr-2 h-4 w-4" />
@@ -216,6 +231,11 @@ function App() {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* TAB: ESTATÍSTICAS */}
+          <TabsContent value="stats">
+            <StatsPanel />
           </TabsContent>
 
           {/* TAB: CONFIGURAÇÕES */}
