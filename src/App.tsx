@@ -5,10 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useTimer } from './hooks/useTimer'
 import { useTasks } from './hooks/useTasks'
 import { formatTime } from './lib/utils'
-import { Play, Pause, RotateCcw, SkipForward, Timer as TimerIcon, ListTodo, X } from 'lucide-react'
+import { Play, Pause, RotateCcw, SkipForward, Timer as TimerIcon, ListTodo, Settings, X } from 'lucide-react'
 import { CircularProgress } from './components/timer/CircularProgress'
 import { TaskList } from './components/tasks/TaskList'
 import { AddTaskDialog } from './components/tasks/AddTaskDialog'
+import { SettingsPanel } from './components/settings/SettingsPanel'
 import { useEffect } from 'react'
 
 function App() {
@@ -24,7 +25,6 @@ function App() {
     incrementTaskPomodoro 
   } = useTasks()
 
-  // Incrementar pomodoro da task ativa quando completar sessão de trabalho
   useEffect(() => {
     if (timerState.timeRemaining === 0 && timerState.mode === 'work' && activeTaskId) {
       incrementTaskPomodoro(activeTaskId)
@@ -53,7 +53,6 @@ function App() {
   const activeTask = tasks.find(t => t.id === activeTaskId)
   const pendingTasks = tasks.filter(t => !t.completed)
 
-  // Handler para desvincular tarefa
   const handleUnlinkTask = () => {
     setActiveTask(null)
   }
@@ -61,15 +60,13 @@ function App() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-4">
-        {/* Header */}
         <div className="text-center py-4">
           <h1 className="text-3xl font-bold">Pomodoro Pro</h1>
           <p className="text-muted-foreground">Gerencie seu tempo com eficiência</p>
         </div>
 
-        {/* Tabs: Timer e Tarefas */}
         <Tabs defaultValue="timer" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="timer">
               <TimerIcon className="mr-2 h-4 w-4" />
               Timer
@@ -77,6 +74,10 @@ function App() {
             <TabsTrigger value="tasks">
               <ListTodo className="mr-2 h-4 w-4" />
               Tarefas ({pendingTasks.length})
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="mr-2 h-4 w-4" />
+              Config
             </TabsTrigger>
           </TabsList>
 
@@ -113,7 +114,6 @@ function App() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-8">
-                {/* Progress circular com timer */}
                 <div className="flex items-center justify-center py-4">
                   <div className="relative">
                     <CircularProgress 
@@ -133,13 +133,11 @@ function App() {
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="space-y-2">
                   <div className="text-center text-lg text-muted-foreground">
                     🍅 <span className="font-semibold text-foreground">{timerState.completedPomodoros}</span> pomodoros completos hoje
                   </div>
                   
-                  {/* Progress da tarefa ativa */}
                   {activeTask && (
                     <div className="text-center text-sm text-muted-foreground">
                       {activeTask.completedPomodoros} / {activeTask.estimatedPomodoros} pomodoros nesta tarefa
@@ -147,7 +145,6 @@ function App() {
                   )}
                 </div>
 
-                {/* Controls */}
                 <div className="flex gap-3">
                   <Button 
                     size="lg" 
@@ -219,6 +216,11 @@ function App() {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* TAB: CONFIGURAÇÕES */}
+          <TabsContent value="settings">
+            <SettingsPanel />
           </TabsContent>
         </Tabs>
       </div>
