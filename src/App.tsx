@@ -1,12 +1,13 @@
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { useTimer } from '@/hooks/useTimer'
-import { formatTime } from '@/lib/utils'
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Badge } from './components/ui/badge'
+import { useTimer } from './hooks/useTimer'
+import { formatTime } from './lib/utils'
 import { Play, Pause, RotateCcw, SkipForward } from 'lucide-react'
+import { CircularProgress } from './components/timer/CircularProgress'
 
 function App() {
-  const { timerState, toggle, reset, skip } = useTimer()
+  const { timerState, toggle, reset, skip, progress } = useTimer()
 
   const getModeLabel = () => {
     switch (timerState.mode) {
@@ -21,6 +22,10 @@ function App() {
 
   const getModeVariant = () => {
     return timerState.mode === 'work' ? 'destructive' : 'default'
+  }
+
+  const getModeColor = () => {
+    return timerState.mode === 'work' ? '#ef4444' : '#10b981'
   }
 
   return (
@@ -39,17 +44,25 @@ function App() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center gap-6">
-            {/* Timer Display */}
-            <div className="text-7xl font-bold tabular-nums tracking-tight">
-              {formatTime(timerState.timeRemaining)}
+            {/* Circular Progress com Timer */}
+            <div className="relative flex items-center justify-center">
+              <CircularProgress 
+                progress={progress} 
+                size={280}
+                strokeWidth={8}
+                color={getModeColor()}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-7xl font-bold tabular-nums tracking-tight">
+                  {formatTime(timerState.timeRemaining)}
+                </div>
+              </div>
             </div>
 
-            {/* Pomodoros completed */}
             <div className="text-sm text-muted-foreground">
               🍅 {timerState.completedPomodoros} pomodoros completos
             </div>
 
-            {/* Controls */}
             <div className="flex gap-2 w-full">
               <Button 
                 size="lg" 
@@ -73,6 +86,7 @@ function App() {
                 size="lg" 
                 variant="outline"
                 onClick={reset}
+                disabled={timerState.isRunning}
               >
                 <RotateCcw className="h-4 w-4" />
               </Button>

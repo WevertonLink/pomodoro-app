@@ -1,11 +1,23 @@
 import { useEffect, useCallback } from 'react'
 import { useAtom } from 'jotai'
-import { timerStateAtom } from '@/store/timer-store'
-import { settingsAtom } from '@/store/settings-store'
+import { timerStateAtom } from '../store/timer-store'
+import { settingsAtom } from '../store/settings-store'
+import { soundManager } from '../lib/sounds'
 
 export function useTimer() {
   const [timerState, setTimerState] = useAtom(timerStateAtom)
   const [settings] = useAtom(settingsAtom)
+
+  // Solicitar permissão para notificações na primeira montagem
+  useEffect(() => {
+    soundManager.requestNotificationPermission()
+  }, [])
+
+  // Atualizar volume do som quando settings mudar
+  useEffect(() => {
+    soundManager.setVolume(settings.soundVolume)
+    soundManager.setEnabled(settings.soundEnabled)
+  }, [settings.soundVolume, settings.soundEnabled])
 
   // Countdown logic
   useEffect(() => {
@@ -14,7 +26,23 @@ export function useTimer() {
     const interval = setInterval(() => {
       setTimerState((prev) => {
         if (prev.timeRemaining <= 0) {
-          // Timer finished
+          // Timer finished - play sound and show notification
+          const isWorkSession = prev.mode === 'work'
+          
+          if (isWorkSession) {
+            soundManager.play('work-end')
+            soundManager.showNotification(
+              'Sessão de Foco Completa! 🎉',
+              'Hora de fazer uma pausa!'
+            )
+          } else {
+            soundManager.play('break-end')
+            soundManager.showNotification(
+              'Pausa Terminada! 💪',
+              'Pronto para focar novamente?'
+            )
+          }
+
           return {
             ...prev,
             isRunning: false,
@@ -32,15 +60,23 @@ export function useTimer() {
     return () => clearInterval(interval)
   }, [timerState.isRunning, setTimerState])
 
-  // Start/Resume timer
   const start = useCallback(() => {
+    const isStarting = !timerState.isRunning && timerState.timeRemaining > 0
+    
+    if (isStarting) {
+      if (timerState.mode === 'work') {
+        soundManager.play('work-start')
+      } else {
+        soundManager.play('break-start')
+      }
+    }
+
     setTimerState((prev) => ({
       ...prev,
       isRunning: true,
     }))
-  }, [setTimerState])
+  }, [timerState.isRunning, timerState.timeRemaining, timerState.mode, setTimerState])
 
-  // Pause timer
   const pause = useCallback(() => {
     setTimerState((prev) => ({
       ...prev,
@@ -48,7 +84,6 @@ export function useTimer() {
     }))
   }, [setTimerState])
 
-  // Reset timer to current mode duration
   const reset = useCallback(() => {
     setTimerState((prev) => {
       const duration = prev.mode === 'work' 
@@ -65,7 +100,6 @@ export function useTimer() {
     })
   }, [setTimerState, settings])
 
-  // Skip to next session
   const skip = useCallback(() => {
     setTimerState((prev) => {
       const nextMode = prev.mode === 'work' ? 'break' : 'work'
@@ -81,11 +115,11 @@ export function useTimer() {
         completedPomodoros: prev.mode === 'work' 
           ? prev.completedPomodoros + 1 
           : prev.completedPomodoros,
+        currentSession: prev.currentSession + 1,
       }
     })
   }, [setTimerState, settings])
 
-  // Toggle start/pause
   const toggle = useCallback(() => {
     if (timerState.isRunning) {
       pause()
@@ -94,6 +128,17 @@ export function useTimer() {
     }
   }, [timerState.isRunning, start, pause])
 
+  // Calcular progresso (0-100)
+  const getProgress = useCallback(() => {
+    const totalTime = timerState.mode === 'work'
+      ? settings.workDuration * 60
+      : timerState.mode === 'break'
+      ? settings.breakDuration * 60
+      : settings.longBreakDuration * 60
+    
+    return ((totalTime - timerState.timeRemaining) / totalTime) * 100
+  }, [timerState, settings])
+
   return {
     timerState,
     start,
@@ -101,5 +146,6 @@ export function useTimer() {
     reset,
     skip,
     toggle,
+    progress: getProgress(),
   }
 }
