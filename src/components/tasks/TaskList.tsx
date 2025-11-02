@@ -3,7 +3,7 @@ import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Progress } from '../ui/progress'
-import { Check, Trash2, Play } from 'lucide-react'
+import { Check, Trash2, Play, Pause } from 'lucide-react'
 
 interface TaskListProps {
   tasks: Task[]
@@ -46,7 +46,7 @@ export function TaskList({
           <Card 
             key={task.id} 
             className={`p-4 transition-all ${
-              isActive ? 'ring-2 ring-primary shadow-lg' : ''
+              isActive ? 'ring-2 ring-primary shadow-lg bg-primary/5' : ''
             }`}
           >
             <div className="flex items-start gap-3">
@@ -58,9 +58,16 @@ export function TaskList({
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base truncate">
-                  {task.title}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-base truncate">
+                    {task.title}
+                  </h3>
+                  {isActive && (
+                    <Badge variant="default" className="text-xs">
+                      Ativa
+                    </Badge>
+                  )}
+                </div>
                 {task.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                     {task.description}
@@ -97,10 +104,15 @@ export function TaskList({
                 <Button
                   size="sm"
                   variant={isActive ? "default" : "outline"}
-                  onClick={() => onSelectTask(task.id)}
+                  onClick={() => onSelectTask(isActive ? '' : task.id)}
                   disabled={task.completed}
+                  title={isActive ? "Desvincular" : "Vincular ao timer"}
                 >
-                  <Play className="h-4 w-4" />
+                  {isActive ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
                 </Button>
                 
                 <Button
@@ -108,6 +120,7 @@ export function TaskList({
                   variant="outline"
                   onClick={() => onCompleteTask(task.id)}
                   disabled={task.completed}
+                  title="Marcar como completa"
                 >
                   <Check className="h-4 w-4" />
                 </Button>
@@ -116,6 +129,7 @@ export function TaskList({
                   size="sm"
                   variant="outline"
                   onClick={() => onDeleteTask(task.id)}
+                  title="Deletar tarefa"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

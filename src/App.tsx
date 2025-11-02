@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useTimer } from './hooks/useTimer'
 import { useTasks } from './hooks/useTasks'
 import { formatTime } from './lib/utils'
-import { Play, Pause, RotateCcw, SkipForward, Timer as TimerIcon, ListTodo } from 'lucide-react'
+import { Play, Pause, RotateCcw, SkipForward, Timer as TimerIcon, ListTodo, X } from 'lucide-react'
 import { CircularProgress } from './components/timer/CircularProgress'
 import { TaskList } from './components/tasks/TaskList'
 import { AddTaskDialog } from './components/tasks/AddTaskDialog'
@@ -53,6 +53,11 @@ function App() {
   const activeTask = tasks.find(t => t.id === activeTaskId)
   const pendingTasks = tasks.filter(t => !t.completed)
 
+  // Handler para desvincular tarefa
+  const handleUnlinkTask = () => {
+    setActiveTask(null)
+  }
+
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto space-y-4">
@@ -80,11 +85,25 @@ function App() {
             <Card className="w-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="text-2xl">Sessão #{timerState.currentSession}</CardTitle>
-                    {activeTask && (
+                    {activeTask ? (
+                      <div className="flex items-center gap-2 mt-2">
+                        <CardDescription className="text-base">
+                          🎯 {activeTask.title}
+                        </CardDescription>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={handleUnlinkTask}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
                       <CardDescription className="text-base mt-1">
-                        🎯 {activeTask.title}
+                        Nenhuma tarefa vinculada
                       </CardDescription>
                     )}
                   </div>
@@ -94,6 +113,7 @@ function App() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-8">
+                {/* Progress circular com timer */}
                 <div className="flex items-center justify-center py-4">
                   <div className="relative">
                     <CircularProgress 
@@ -113,12 +133,21 @@ function App() {
                   </div>
                 </div>
 
-                <div className="text-center">
-                  <div className="text-lg text-muted-foreground">
+                {/* Stats */}
+                <div className="space-y-2">
+                  <div className="text-center text-lg text-muted-foreground">
                     🍅 <span className="font-semibold text-foreground">{timerState.completedPomodoros}</span> pomodoros completos hoje
                   </div>
+                  
+                  {/* Progress da tarefa ativa */}
+                  {activeTask && (
+                    <div className="text-center text-sm text-muted-foreground">
+                      {activeTask.completedPomodoros} / {activeTask.estimatedPomodoros} pomodoros nesta tarefa
+                    </div>
+                  )}
                 </div>
 
+                {/* Controls */}
                 <div className="flex gap-3">
                   <Button 
                     size="lg" 
@@ -172,6 +201,11 @@ function App() {
                 <CardTitle>Minhas Tarefas</CardTitle>
                 <CardDescription>
                   {pendingTasks.length} pendente{pendingTasks.length !== 1 ? 's' : ''}
+                  {activeTask && (
+                    <span className="ml-2 text-primary">
+                      • {activeTask.title} ativa
+                    </span>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
