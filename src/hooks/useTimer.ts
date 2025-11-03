@@ -9,7 +9,7 @@ export function useTimer() {
   const [timerState, setTimerState] = useAtom(timerStateAtom)
   const [settings] = useAtom(settingsAtom)
   const { recordPomodoroComplete, recordBreakComplete } = useStats()
-  const hasPlayedSoundRef = useRef(false)
+  const hasCompletedRef = useRef(false)
 
   useEffect(() => {
     soundManager.requestNotificationPermission()
@@ -20,110 +20,120 @@ export function useTimer() {
     soundManager.setEnabled(settings.soundEnabled)
   }, [settings.soundVolume, settings.soundEnabled])
 
+  // Timer countdown
   useEffect(() => {
     if (!timerState.isRunning) return
 
     const interval = setInterval(() => {
       setTimerState((prev) => {
-        // Se já chegou a zero, não fazer nada (evita loop)
-        if (prev.timeRemaining <= 0) {
-          return prev
-        }
-
-        const newTime = prev.timeRemaining - 1
-
-        // Quando chegar a zero exatamente
-        if (newTime === 0) {
-          const isWorkSession = prev.mode === 'work'
-          
-          // Tocar som e notificar apenas uma vez
-          if (!hasPlayedSoundRef.current) {
-            hasPlayedSoundRef.current = true
-            
-            if (isWorkSession) {
-              recordPomodoroComplete(settings.workDuration)
-              soundManager.play('work-end')
-              soundManager.showNotification(
-                'Sessão de Foco Completa! 🎉',
-                `Você focou por ${settings.workDuration} minutos!`
-              )
-            } else {
-              recordBreakComplete(
-                prev.mode === 'break' ? settings.breakDuration : settings.longBreakDuration
-              )
-              soundManager.play('break-end')
-              soundManager.showNotification(
-                'Pausa Terminada! 💪',
-                'Pronto para focar novamente?'
-              )
-            }
-
-            // Auto-start próxima sessão se configurado
-            const shouldAutoStart = isWorkSession 
-              ? settings.autoStartBreaks 
-              : settings.autoStartPomodoros
-
-            // Determinar próximo modo
-            const completedPomodoros = prev.completedPomodoros + (isWorkSession ? 1 : 0)
-            let nextMode: 'work' | 'break' | 'longBreak' = 'work'
-            
-            if (isWorkSession) {
-              // Acabou trabalho, vai para pausa
-              if (completedPomodoros % settings.pomodorosUntilLongBreak === 0) {
-                nextMode = 'longBreak'
-              } else {
-                nextMode = 'break'
-              }
-            } else {
-              // Acabou pausa, volta para trabalho
-              nextMode = 'work'
-            }
-
-            const nextDuration = nextMode === 'work' 
-              ? settings.workDuration 
-              : nextMode === 'break'
-              ? settings.breakDuration
-              : settings.longBreakDuration
-
-            // Resetar flag de som após um breve delay
-            setTimeout(() => {
-              hasPlayedSoundRef.current = false
-            }, 1000)
-
-            return {
-              ...prev,
-              mode: nextMode,
-              timeRemaining: nextDuration * 60,
-              isRunning: shouldAutoStart,
-              completedPomodoros: completedPomodoros,
-              currentSession: prev.currentSession + 1,
-            }
+        if (prev.timeRemaining > 0) {
+          return {
+            ...prev,
+            timeRemaining: prev.timeRemaining - 1,
           }
-
-          return prev
         }
-
-        return {
-          ...prev,
-          timeRemaining: newTime,
-        }
+        return prev
       })
     }, 1000)
 
     return () => clearInterval(interval)
+  }, [timerState.isRunning, setTimerState])
+
+  // Detectar quando chega a zero e fazer transição
+  useEffect(() => {
+    if (timerState.timeRemaining === 0 && !hasCompletedRef.current) {
+      hasCompletedRef.current = true
+
+      const isWorkSession = timerState.mode === 'work'
+      
+      // Tocar som e registrar stats
+      if (isWorkSession) {
+        recordPomodoroComplete(settings.workDuration)
+        soundManager.play('work-end')
+        soundManager.showNotification(
+          'Sessão de Foco Completa! 🎉',
+          `Você focou por ${settings.workDuration} minutos!`
+        )
+      } else {
+        recordBreakComplete(
+          timerState.mode === 'break' ? settings.breakDuration : settings.longBreakDuration
+        )
+        soundManager.play('break-end')
+        soundManager.showNotification(
+          'Pausa Terminada! 💪',
+          'Pronto para focar novamente?'
+        )
+      }
+
+      // Determinar próxima sessão
+      const newCompletedPomodoros = isWorkSession 
+        ? timerState.completedPomodoros + 1 
+        : timerState.completedPomodoros
+
+      let nextMode: 'work' | 'break' | 'longBreak'
+      
+      if (isWorkSession) {
+        // Acabou trabalho -> pausa
+        if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
+          nextMode = 'longBreak'
+        } else {
+          nextMode = 'break'
+        }
+      } else {
+        // Acabou pausa -> trabalho
+        nextMode = 'work'
+      }
+
+      const nextDuration = nextMode === 'work' 
+        ? settings.workDuration 
+        : nextMode === 'break'
+        ? settings.breakDuration
+        : settings.longBreakDuration
+
+      // Verificar se deve auto-iniciar
+      const shouldAutoStart = isWorkSession 
+        ? settings.autoStartBreaks 
+        : settings.autoStartPomodoros
+
+      // Fazer transição após pequeno delay
+      setTimeout(() => {
+        setTimerState({
+          mode: nextMode,
+          timeRemaining: nextDuration * 60,
+          isRunning: shouldAutoStart,
+          completedPomodoros: newCompletedPomodoros,
+          currentSession: timerState.currentSession + 1,
+        })
+
+        // Tocar som de início se auto-start estiver ativo
+        if (shouldAutoStart) {
+          setTimeout(() => {
+            if (nextMode === 'work') {
+              soundManager.play('work-start')
+            } else {
+              soundManager.play('break-start')
+            }
+          }, 500)
+        }
+
+        hasCompletedRef.current = false
+      }, 1000)
+    }
   }, [
-    timerState.isRunning, 
-    setTimerState, 
-    settings, 
-    recordPomodoroComplete, 
-    recordBreakComplete
+    timerState.timeRemaining,
+    timerState.mode,
+    timerState.completedPomodoros,
+    timerState.currentSession,
+    settings,
+    setTimerState,
+    recordPomodoroComplete,
+    recordBreakComplete,
   ])
 
   const start = useCallback(() => {
-    const isStarting = !timerState.isRunning && timerState.timeRemaining > 0
+    hasCompletedRef.current = false
     
-    if (isStarting) {
-      hasPlayedSoundRef.current = false
+    if (!timerState.isRunning && timerState.timeRemaining > 0) {
       if (timerState.mode === 'work') {
         soundManager.play('work-start')
       } else {
@@ -145,7 +155,7 @@ export function useTimer() {
   }, [setTimerState])
 
   const reset = useCallback(() => {
-    hasPlayedSoundRef.current = false
+    hasCompletedRef.current = false
     setTimerState((prev) => {
       const duration = prev.mode === 'work' 
         ? settings.workDuration 
@@ -162,40 +172,39 @@ export function useTimer() {
   }, [setTimerState, settings])
 
   const skip = useCallback(() => {
-    hasPlayedSoundRef.current = false
-    setTimerState((prev) => {
-      // Determinar próximo modo
-      const isWork = prev.mode === 'work'
-      const completedPomodoros = prev.completedPomodoros + (isWork ? 1 : 0)
-      
-      let nextMode: 'work' | 'break' | 'longBreak' = 'work'
-      
-      if (isWork) {
-        if (completedPomodoros % settings.pomodorosUntilLongBreak === 0) {
-          nextMode = 'longBreak'
-        } else {
-          nextMode = 'break'
-        }
+    hasCompletedRef.current = false
+    
+    const isWork = timerState.mode === 'work'
+    const newCompletedPomodoros = isWork 
+      ? timerState.completedPomodoros + 1 
+      : timerState.completedPomodoros
+    
+    let nextMode: 'work' | 'break' | 'longBreak'
+    
+    if (isWork) {
+      if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
+        nextMode = 'longBreak'
       } else {
-        nextMode = 'work'
+        nextMode = 'break'
       }
+    } else {
+      nextMode = 'work'
+    }
 
-      const duration = nextMode === 'work' 
-        ? settings.workDuration 
-        : nextMode === 'break'
-        ? settings.breakDuration
-        : settings.longBreakDuration
+    const duration = nextMode === 'work' 
+      ? settings.workDuration 
+      : nextMode === 'break'
+      ? settings.breakDuration
+      : settings.longBreakDuration
 
-      return {
-        ...prev,
-        mode: nextMode,
-        timeRemaining: duration * 60,
-        isRunning: false,
-        completedPomodoros: completedPomodoros,
-        currentSession: prev.currentSession + 1,
-      }
+    setTimerState({
+      mode: nextMode,
+      timeRemaining: duration * 60,
+      isRunning: false,
+      completedPomodoros: newCompletedPomodoros,
+      currentSession: timerState.currentSession + 1,
     })
-  }, [setTimerState, settings])
+  }, [timerState, setTimerState, settings])
 
   const toggle = useCallback(() => {
     if (timerState.isRunning) {
