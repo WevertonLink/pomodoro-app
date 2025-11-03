@@ -41,8 +41,14 @@ export function useTimer() {
 
   // Detectar quando chega a zero e fazer transição
   useEffect(() => {
-    if (timerState.timeRemaining === 0 && !hasCompletedRef.current) {
+    if (timerState.timeRemaining === 0 && timerState.isRunning && !hasCompletedRef.current) {
       hasCompletedRef.current = true
+
+      // Parar o timer primeiro
+      setTimerState((prev) => ({
+        ...prev,
+        isRunning: false,
+      }))
 
       const isWorkSession = timerState.mode === 'work'
       
@@ -65,65 +71,67 @@ export function useTimer() {
         )
       }
 
-      // Determinar próxima sessão
-      const newCompletedPomodoros = isWorkSession 
-        ? timerState.completedPomodoros + 1 
-        : timerState.completedPomodoros
-
-      let nextMode: 'work' | 'break' | 'longBreak'
-      
-      if (isWorkSession) {
-        // Acabou trabalho -> pausa
-        if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
-          nextMode = 'longBreak'
-        } else {
-          nextMode = 'break'
-        }
-      } else {
-        // Acabou pausa -> trabalho
-        nextMode = 'work'
-      }
-
-      const nextDuration = nextMode === 'work' 
-        ? settings.workDuration 
-        : nextMode === 'break'
-        ? settings.breakDuration
-        : settings.longBreakDuration
-
-      // Verificar se deve auto-iniciar
-      const shouldAutoStart = isWorkSession 
-        ? settings.autoStartBreaks 
-        : settings.autoStartPomodoros
-
       // Fazer transição após pequeno delay
       setTimeout(() => {
-        setTimerState({
-          mode: nextMode,
-          timeRemaining: nextDuration * 60,
-          isRunning: shouldAutoStart,
-          completedPomodoros: newCompletedPomodoros,
-          currentSession: timerState.currentSession + 1,
-        })
+        setTimerState((prev) => {
+          const newCompletedPomodoros = isWorkSession 
+            ? prev.completedPomodoros + 1 
+            : prev.completedPomodoros
 
-        // Tocar som de início se auto-start estiver ativo
-        if (shouldAutoStart) {
-          setTimeout(() => {
-            if (nextMode === 'work') {
-              soundManager.play('work-start')
+          let nextMode: 'work' | 'break' | 'longBreak'
+          
+          if (isWorkSession) {
+            // Acabou trabalho -> pausa
+            if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
+              nextMode = 'longBreak'
             } else {
-              soundManager.play('break-start')
+              nextMode = 'break'
             }
-          }, 500)
-        }
+          } else {
+            // Acabou pausa -> trabalho
+            nextMode = 'work'
+          }
 
-        hasCompletedRef.current = false
+          const nextDuration = nextMode === 'work' 
+            ? settings.workDuration 
+            : nextMode === 'break'
+            ? settings.breakDuration
+            : settings.longBreakDuration
+
+          // Verificar se deve auto-iniciar
+          const shouldAutoStart = isWorkSession 
+            ? settings.autoStartBreaks 
+            : settings.autoStartPomodoros
+
+          // Tocar som de início se auto-start estiver ativo
+          if (shouldAutoStart) {
+            setTimeout(() => {
+              if (nextMode === 'work') {
+                soundManager.play('work-start')
+              } else {
+                soundManager.play('break-start')
+              }
+            }, 300)
+          }
+
+          hasCompletedRef.current = false
+
+          return {
+            ...prev,
+            mode: nextMode,
+            timeRemaining: nextDuration * 60,
+            isRunning: shouldAutoStart,
+            completedPomodoros: newCompletedPomodoros,
+            currentSession: prev.currentSession + 1,
+          }
+        })
       }, 1000)
     }
   }, [
     timerState.timeRemaining,
+    timerState.isRunning,
     timerState.mode,
     timerState.completedPomodoros,
-    timerState.currentSession,
     settings,
     setTimerState,
     recordPomodoroComplete,
@@ -174,37 +182,40 @@ export function useTimer() {
   const skip = useCallback(() => {
     hasCompletedRef.current = false
     
-    const isWork = timerState.mode === 'work'
-    const newCompletedPomodoros = isWork 
-      ? timerState.completedPomodoros + 1 
-      : timerState.completedPomodoros
-    
-    let nextMode: 'work' | 'break' | 'longBreak'
-    
-    if (isWork) {
-      if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
-        nextMode = 'longBreak'
+    setTimerState((prev) => {
+      const isWork = prev.mode === 'work'
+      const newCompletedPomodoros = isWork 
+        ? prev.completedPomodoros + 1 
+        : prev.completedPomodoros
+      
+      let nextMode: 'work' | 'break' | 'longBreak'
+      
+      if (isWork) {
+        if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
+          nextMode = 'longBreak'
+        } else {
+          nextMode = 'break'
+        }
       } else {
-        nextMode = 'break'
+        nextMode = 'work'
       }
-    } else {
-      nextMode = 'work'
-    }
 
-    const duration = nextMode === 'work' 
-      ? settings.workDuration 
-      : nextMode === 'break'
-      ? settings.breakDuration
-      : settings.longBreakDuration
+      const duration = nextMode === 'work' 
+        ? settings.workDuration 
+        : nextMode === 'break'
+        ? settings.breakDuration
+        : settings.longBreakDuration
 
-    setTimerState({
-      mode: nextMode,
-      timeRemaining: duration * 60,
-      isRunning: false,
-      completedPomodoros: newCompletedPomodoros,
-      currentSession: timerState.currentSession + 1,
+      return {
+        ...prev,
+        mode: nextMode,
+        timeRemaining: duration * 60,
+        isRunning: false,
+        completedPomodoros: newCompletedPomodoros,
+        currentSession: prev.currentSession + 1,
+      }
     })
-  }, [timerState, setTimerState, settings])
+  }, [setTimerState, settings])
 
   const toggle = useCallback(() => {
     if (timerState.isRunning) {
