@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai'
-import { statsAtom, todayStatsAtom, last7DaysStatsAtom, DailyStats } from '../store/stats-store'
+import { statsAtom, todayStatsAtom, last7DaysStatsAtom } from '../store/stats-store'
 import { useCallback } from 'react'
 
 export function useStats() {
@@ -32,7 +32,6 @@ export function useStats() {
         })
       }
 
-      // Calcular streak
       const sortedDates = dailyStats
         .map(s => s.date)
         .sort()

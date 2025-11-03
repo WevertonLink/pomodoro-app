@@ -21,6 +21,8 @@ import { TaskList } from './components/tasks/TaskList'
 import { AddTaskDialog } from './components/tasks/AddTaskDialog'
 import { SettingsPanel } from './components/settings/SettingsPanel'
 import { StatsPanel } from './components/stats/StatsPanel'
+import { InstallPrompt } from './components/pwa/InstallPrompt'
+import { OfflineIndicator } from './components/pwa/OfflineIndicator'
 import { useEffect } from 'react'
 
 function App() {
@@ -69,182 +71,188 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto space-y-4">
-        <div className="text-center py-4">
-          <h1 className="text-3xl font-bold">Pomodoro Pro</h1>
-          <p className="text-muted-foreground">Gerencie seu tempo com eficiência</p>
-        </div>
+    <>
+      {/* PWA Components */}
+      <OfflineIndicator />
+      <InstallPrompt />
 
-        <Tabs defaultValue="timer" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="timer">
-              <TimerIcon className="mr-2 h-4 w-4" />
-              Timer
-            </TabsTrigger>
-            <TabsTrigger value="tasks">
-              <ListTodo className="mr-2 h-4 w-4" />
-              Tarefas ({pendingTasks.length})
-            </TabsTrigger>
-            <TabsTrigger value="stats">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Stats
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="mr-2 h-4 w-4" />
-              Config
-            </TabsTrigger>
-          </TabsList>
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="text-center py-4">
+            <h1 className="text-3xl font-bold">Pomodoro Pro</h1>
+            <p className="text-muted-foreground">Gerencie seu tempo com eficiência</p>
+          </div>
 
-          {/* TAB: TIMER */}
-          <TabsContent value="timer">
-            <Card className="w-full">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl">Sessão #{timerState.currentSession}</CardTitle>
-                    {activeTask ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <CardDescription className="text-base">
-                          🎯 {activeTask.title}
+          <Tabs defaultValue="timer" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="timer">
+                <TimerIcon className="mr-2 h-4 w-4" />
+                Timer
+              </TabsTrigger>
+              <TabsTrigger value="tasks">
+                <ListTodo className="mr-2 h-4 w-4" />
+                Tarefas ({pendingTasks.length})
+              </TabsTrigger>
+              <TabsTrigger value="stats">
+                <BarChart3 className="mr-2 h-4 w-4" />
+                Stats
+              </TabsTrigger>
+              <TabsTrigger value="settings">
+                <Settings className="mr-2 h-4 w-4" />
+                Config
+              </TabsTrigger>
+            </TabsList>
+
+            {/* TAB: TIMER */}
+            <TabsContent value="timer">
+              <Card className="w-full">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-2xl">Sessão #{timerState.currentSession}</CardTitle>
+                      {activeTask ? (
+                        <div className="flex items-center gap-2 mt-2">
+                          <CardDescription className="text-base">
+                            🎯 {activeTask.title}
+                          </CardDescription>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={handleUnlinkTask}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <CardDescription className="text-base mt-1">
+                          Nenhuma tarefa vinculada
                         </CardDescription>
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={handleUnlinkTask}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <CardDescription className="text-base mt-1">
-                        Nenhuma tarefa vinculada
-                      </CardDescription>
-                    )}
+                      )}
+                    </div>
+                    <Badge variant={getModeVariant()} className="text-sm px-3 py-1">
+                      {getModeLabel()}
+                    </Badge>
                   </div>
-                  <Badge variant={getModeVariant()} className="text-sm px-3 py-1">
-                    {getModeLabel()}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                <div className="flex items-center justify-center py-4">
-                  <div className="relative">
-                    <CircularProgress 
-                      progress={progress} 
-                      size={320}
-                      strokeWidth={12}
-                      color={getModeColor()}
-                    />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-8xl font-bold tabular-nums tracking-tight">
-                        {formatTime(timerState.timeRemaining)}
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">
-                        {Math.round(progress)}% completo
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <div className="flex items-center justify-center py-4">
+                    <div className="relative">
+                      <CircularProgress 
+                        progress={progress} 
+                        size={320}
+                        strokeWidth={12}
+                        color={getModeColor()}
+                      />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="text-8xl font-bold tabular-nums tracking-tight">
+                          {formatTime(timerState.timeRemaining)}
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-2">
+                          {Math.round(progress)}% completo
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <div className="text-center text-lg text-muted-foreground">
-                    🍅 <span className="font-semibold text-foreground">{timerState.completedPomodoros}</span> pomodoros completos hoje
-                  </div>
-                  
-                  {activeTask && (
-                    <div className="text-center text-sm text-muted-foreground">
-                      {activeTask.completedPomodoros} / {activeTask.estimatedPomodoros} pomodoros nesta tarefa
+                  <div className="space-y-2">
+                    <div className="text-center text-lg text-muted-foreground">
+                      🍅 <span className="font-semibold text-foreground">{timerState.completedPomodoros}</span> pomodoros completos hoje
                     </div>
-                  )}
-                </div>
-
-                <div className="flex gap-3">
-                  <Button 
-                    size="lg" 
-                    className="flex-1 h-14 text-lg"
-                    onClick={toggle}
-                  >
-                    {timerState.isRunning ? (
-                      <>
-                        <Pause className="mr-2 h-5 w-5" />
-                        Pausar
-                      </>
-                    ) : (
-                      <>
-                        <Play className="mr-2 h-5 w-5" />
-                        Iniciar
-                      </>
+                    
+                    {activeTask && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        {activeTask.completedPomodoros} / {activeTask.estimatedPomodoros} pomodoros nesta tarefa
+                      </div>
                     )}
-                  </Button>
-                  
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    onClick={reset}
-                    disabled={timerState.isRunning}
-                    className="h-14 px-6"
-                    title="Resetar"
-                  >
-                    <RotateCcw className="h-5 w-5" />
-                  </Button>
-                  
-                  <Button 
-                    size="lg" 
-                    variant="outline"
-                    onClick={skip}
-                    className="h-14 px-6"
-                    title="Pular"
-                  >
-                    <SkipForward className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </div>
 
-          {/* TAB: TAREFAS */}
-          <TabsContent value="tasks" className="space-y-4">
-            <AddTaskDialog onAddTask={addTask} categories={categories} />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Minhas Tarefas</CardTitle>
-                <CardDescription>
-                  {pendingTasks.length} pendente{pendingTasks.length !== 1 ? 's' : ''}
-                  {activeTask && (
-                    <span className="ml-2 text-primary">
-                      • {activeTask.title} ativa
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TaskList
-                  tasks={pendingTasks}
-                  activeTaskId={activeTaskId}
-                  onSelectTask={setActiveTask}
-                  onCompleteTask={completeTask}
-                  onDeleteTask={deleteTask}
-                  categories={categories}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <div className="flex gap-3">
+                    <Button 
+                      size="lg" 
+                      className="flex-1 h-14 text-lg"
+                      onClick={toggle}
+                    >
+                      {timerState.isRunning ? (
+                        <>
+                          <Pause className="mr-2 h-5 w-5" />
+                          Pausar
+                        </>
+                      ) : (
+                        <>
+                          <Play className="mr-2 h-5 w-5" />
+                          Iniciar
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      onClick={reset}
+                      disabled={timerState.isRunning}
+                      className="h-14 px-6"
+                      title="Resetar"
+                    >
+                      <RotateCcw className="h-5 w-5" />
+                    </Button>
+                    
+                    <Button 
+                      size="lg" 
+                      variant="outline"
+                      onClick={skip}
+                      className="h-14 px-6"
+                      title="Pular"
+                    >
+                      <SkipForward className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* TAB: ESTATÍSTICAS */}
-          <TabsContent value="stats">
-            <StatsPanel />
-          </TabsContent>
+            {/* TAB: TAREFAS */}
+            <TabsContent value="tasks" className="space-y-4">
+              <AddTaskDialog onAddTask={addTask} categories={categories} />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Minhas Tarefas</CardTitle>
+                  <CardDescription>
+                    {pendingTasks.length} pendente{pendingTasks.length !== 1 ? 's' : ''}
+                    {activeTask && (
+                      <span className="ml-2 text-primary">
+                        • {activeTask.title} ativa
+                      </span>
+                    )}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TaskList
+                    tasks={pendingTasks}
+                    activeTaskId={activeTaskId}
+                    onSelectTask={setActiveTask}
+                    onCompleteTask={completeTask}
+                    onDeleteTask={deleteTask}
+                    categories={categories}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          {/* TAB: CONFIGURAÇÕES */}
-          <TabsContent value="settings">
-            <SettingsPanel />
-          </TabsContent>
-        </Tabs>
+            {/* TAB: ESTATÍSTICAS */}
+            <TabsContent value="stats">
+              <StatsPanel />
+            </TabsContent>
+
+            {/* TAB: CONFIGURAÇÕES */}
+            <TabsContent value="settings">
+              <SettingsPanel />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

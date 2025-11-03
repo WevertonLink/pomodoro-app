@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useSettings } from '../../hooks/useSettings'
 import { useState } from 'react'
+import { AboutSection } from './AboutSection'
 
 export function SettingsPanel() {
   const { settings, updateSettings } = useSettings()
@@ -68,7 +69,6 @@ export function SettingsPanel() {
           </TabsTrigger>
         </TabsList>
 
-        {/* TAB: TIMER */}
         <TabsContent value="timer" className="space-y-4">
           <Card>
             <CardHeader>
@@ -197,7 +197,6 @@ export function SettingsPanel() {
           </Card>
         </TabsContent>
 
-        {/* TAB: ÁUDIO */}
         <TabsContent value="audio" className="space-y-4">
           <Card>
             <CardHeader>
@@ -247,7 +246,6 @@ export function SettingsPanel() {
                 className="w-full"
                 disabled={!settings.soundEnabled}
                 onClick={() => {
-                  const audio = new Audio()
                   const ctx = new AudioContext()
                   const osc = ctx.createOscillator()
                   const gain = ctx.createGain()
@@ -305,7 +303,7 @@ export function SettingsPanel() {
                   onClick={() => {
                     new Notification('Pomodoro Pro', {
                       body: 'Notificações funcionando! 🎉',
-                      icon: '/favicon.ico'
+                      icon: '/icons/icon-192x192.svg'
                     })
                   }}
                 >
@@ -317,7 +315,6 @@ export function SettingsPanel() {
           </Card>
         </TabsContent>
 
-        {/* TAB: APARÊNCIA */}
         <TabsContent value="appearance" className="space-y-4">
           <Card>
             <CardHeader>
@@ -377,6 +374,8 @@ export function SettingsPanel() {
               </div>
             </CardContent>
           </Card>
+
+          <AboutSection />
         </TabsContent>
       </Tabs>
     </div>

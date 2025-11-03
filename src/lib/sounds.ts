@@ -1,11 +1,9 @@
 class SoundManager {
-  private sounds: Map<string, HTMLAudioElement> = new Map()
   private volume = 0.7
   private enabled = true
+  private isPlaying = false
 
   async init() {
-    // Por enquanto, vamos usar sons padrão do navegador
-    // Mais tarde você pode adicionar arquivos MP3 personalizados
     console.log('SoundManager initialized')
   }
 
@@ -18,35 +16,45 @@ class SoundManager {
   }
 
   play(soundId: 'work-start' | 'work-end' | 'break-start' | 'break-end') {
-    if (!this.enabled) return
+    if (!this.enabled || this.isPlaying) return
 
-    // Usar Web Audio API para criar beeps simples
-    const audioContext = new AudioContext()
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
+    this.isPlaying = true
 
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+    try {
+      const audioContext = new AudioContext()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
 
-    // Diferentes frequências para diferentes sons
-    const frequencies = {
-      'work-start': 800,
-      'work-end': 600,
-      'break-start': 500,
-      'break-end': 700,
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+
+      const frequencies = {
+        'work-start': 800,
+        'work-end': 600,
+        'break-start': 500,
+        'break-end': 700,
+      }
+
+      oscillator.frequency.value = frequencies[soundId]
+      oscillator.type = 'sine'
+      
+      gainNode.gain.setValueAtTime(this.volume * 0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.5)
+
+      // Liberar após o som terminar
+      setTimeout(() => {
+        this.isPlaying = false
+        audioContext.close()
+      }, 600)
+    } catch (error) {
+      console.error('Error playing sound:', error)
+      this.isPlaying = false
     }
-
-    oscillator.frequency.value = frequencies[soundId]
-    oscillator.type = 'sine'
-    
-    gainNode.gain.setValueAtTime(this.volume * 0.3, audioContext.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
-
-    oscillator.start(audioContext.currentTime)
-    oscillator.stop(audioContext.currentTime + 0.5)
   }
 
-  // Notificação do navegador
   async requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
       await Notification.requestPermission()
@@ -57,8 +65,10 @@ class SoundManager {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, {
         body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
+        icon: '/icons/icon-192x192.svg',
+        badge: '/icons/icon-192x192.svg',
+        silent: false,
+        requireInteraction: false,
       })
     }
   }
