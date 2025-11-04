@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Badge } from './components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useTimer } from './hooks/useTimer'
 import { useTasks } from './hooks/useTasks'
+import { useGamification } from './hooks/useGamification'
 import { formatTime } from './lib/utils'
 import { 
   Play, 
@@ -14,6 +16,7 @@ import {
   ListTodo, 
   Settings, 
   BarChart3,
+  Gamepad2,
   X 
 } from 'lucide-react'
 import { CircularProgress } from './components/timer/CircularProgress'
@@ -23,7 +26,10 @@ import { SettingsPanel } from './components/settings/SettingsPanel'
 import { StatsPanel } from './components/stats/StatsPanel'
 import { InstallPrompt } from './components/pwa/InstallPrompt'
 import { OfflineIndicator } from './components/pwa/OfflineIndicator'
-import { useEffect } from 'react'
+import { GamificationPanel } from './components/gamification/GamificationPanel'
+import { LevelUpAnimation } from './components/gamification/LevelUpAnimation'
+import { AchievementToast } from './components/gamification/AchievementToast'
+import type { Achievement } from './types/gamification'
 
 function App() {
   const { timerState, toggle, reset, skip, progress } = useTimer()
@@ -37,12 +43,56 @@ function App() {
     setActiveTask,
     incrementTaskPomodoro 
   } = useTasks()
+  
+  const {
+    addXP,
+    checkAchievements,
+    updateChallengeProgress,
+  } = useGamification()
 
+  // Animações
+  const [levelUpData, setLevelUpData] = useState<{ level: number; title: string } | null>(null)
+  const [achievementData, setAchievementData] = useState<Achievement | null>(null)
+
+  // Listeners para eventos de gamificação
+  useEffect(() => {
+    const handleLevelUp = (e: CustomEvent) => {
+      setLevelUpData(e.detail)
+    }
+
+    const handleAchievement = (e: CustomEvent) => {
+      setAchievementData(e.detail)
+    }
+
+    window.addEventListener('levelup', handleLevelUp as EventListener)
+    window.addEventListener('achievement', handleAchievement as EventListener)
+
+    return () => {
+      window.removeEventListener('levelup', handleLevelUp as EventListener)
+      window.removeEventListener('achievement', handleAchievement as EventListener)
+    }
+  }, [])
+
+  // Verificar achievements quando stats mudam
+  useEffect(() => {
+    checkAchievements()
+    updateChallengeProgress()
+  }, [timerState.completedPomodoros, checkAchievements, updateChallengeProgress])
+
+  // Dar XP quando completar pomodoro
   useEffect(() => {
     if (timerState.timeRemaining === 0 && timerState.mode === 'work' && activeTaskId) {
       incrementTaskPomodoro(activeTaskId)
+      
+      // XP por completar pomodoro
+      setTimeout(() => {
+        addXP(10, 'Pomodoro completo')
+        
+        // XP bônus se tiver tarefa vinculada
+        addXP(5, 'Tarefa vinculada')
+      }, 1000)
     }
-  }, [timerState.timeRemaining, timerState.mode, activeTaskId, incrementTaskPomodoro])
+  }, [timerState.timeRemaining, timerState.mode, activeTaskId, incrementTaskPomodoro, addXP])
 
   const getModeLabel = () => {
     switch (timerState.mode) {
@@ -76,6 +126,21 @@ function App() {
       <OfflineIndicator />
       <InstallPrompt />
 
+      {/* Gamification Animations */}
+      {levelUpData && (
+        <LevelUpAnimation
+          show={!!levelUpData}
+          level={levelUpData.level}
+          title={levelUpData.title}
+          onClose={() => setLevelUpData(null)}
+        />
+      )}
+      
+      <AchievementToast
+        achievement={achievementData}
+        onClose={() => setAchievementData(null)}
+      />
+
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="text-center py-4">
@@ -84,7 +149,7 @@ function App() {
           </div>
 
           <Tabs defaultValue="timer" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="timer">
                 <TimerIcon className="mr-2 h-4 w-4" />
                 Timer
@@ -92,6 +157,10 @@ function App() {
               <TabsTrigger value="tasks">
                 <ListTodo className="mr-2 h-4 w-4" />
                 Tarefas ({pendingTasks.length})
+              </TabsTrigger>
+              <TabsTrigger value="gamification">
+                <Gamepad2 className="mr-2 h-4 w-4" />
+                Game
               </TabsTrigger>
               <TabsTrigger value="stats">
                 <BarChart3 className="mr-2 h-4 w-4" />
@@ -238,6 +307,11 @@ function App() {
                   />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* TAB: GAMIFICAÇÃO */}
+            <TabsContent value="gamification">
+              <GamificationPanel />
             </TabsContent>
 
             {/* TAB: ESTATÍSTICAS */}
