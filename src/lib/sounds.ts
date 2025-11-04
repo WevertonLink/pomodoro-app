@@ -44,7 +44,6 @@ class SoundManager {
       oscillator.start(audioContext.currentTime)
       oscillator.stop(audioContext.currentTime + 0.5)
 
-      // Liberar após o som terminar
       setTimeout(() => {
         this.isPlaying = false
         audioContext.close()
@@ -56,21 +55,16 @@ class SoundManager {
   }
 
   async requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission()
-    }
+    // Em PWA, não pedimos permissão de notificação tradicional
+    console.log('Notification permission (PWA mode)')
   }
 
   showNotification(title: string, body: string) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/icons/icon-192x192.svg',
-        badge: '/icons/icon-192x192.svg',
-        silent: false,
-        requireInteraction: false,
-      })
-    }
+    // Em PWA, apenas logamos (ou podemos usar Service Worker notification)
+    console.log('📢 Notification:', title, body)
+    
+    // Alternativa: mostrar toast visual no app ao invés de notificação do sistema
+    // Isso seria implementado com um componente React
   }
 }
 

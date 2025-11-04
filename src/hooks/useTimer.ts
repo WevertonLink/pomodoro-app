@@ -11,6 +11,11 @@ export function useTimer() {
   const { recordPomodoroComplete, recordBreakComplete } = useStats()
   const hasCompletedRef = useRef(false)
 
+  // Log para debug
+  useEffect(() => {
+    console.log('Timer State:', timerState)
+  }, [timerState])
+
   useEffect(() => {
     soundManager.requestNotificationPermission()
   }, [])
@@ -42,16 +47,21 @@ export function useTimer() {
   // Detectar quando chega a zero e fazer transição
   useEffect(() => {
     if (timerState.timeRemaining === 0 && timerState.isRunning && !hasCompletedRef.current) {
+      console.log('🎯 Timer completed! Starting transition...')
       hasCompletedRef.current = true
 
-      // Parar o timer primeiro
-      setTimerState((prev) => ({
-        ...prev,
-        isRunning: false,
-      }))
-
       const isWorkSession = timerState.mode === 'work'
+      console.log('Was work session?', isWorkSession)
       
+      // Parar o timer primeiro
+      setTimerState((prev) => {
+        console.log('⏸️ Stopping timer')
+        return {
+          ...prev,
+          isRunning: false,
+        }
+      })
+
       // Tocar som e registrar stats
       if (isWorkSession) {
         recordPomodoroComplete(settings.workDuration)
@@ -73,6 +83,8 @@ export function useTimer() {
 
       // Fazer transição após pequeno delay
       setTimeout(() => {
+        console.log('🔄 Starting next session...')
+        
         setTimerState((prev) => {
           const newCompletedPomodoros = isWorkSession 
             ? prev.completedPomodoros + 1 
@@ -81,14 +93,12 @@ export function useTimer() {
           let nextMode: 'work' | 'break' | 'longBreak'
           
           if (isWorkSession) {
-            // Acabou trabalho -> pausa
             if (newCompletedPomodoros % settings.pomodorosUntilLongBreak === 0) {
               nextMode = 'longBreak'
             } else {
               nextMode = 'break'
             }
           } else {
-            // Acabou pausa -> trabalho
             nextMode = 'work'
           }
 
@@ -98,12 +108,14 @@ export function useTimer() {
             ? settings.breakDuration
             : settings.longBreakDuration
 
-          // Verificar se deve auto-iniciar
           const shouldAutoStart = isWorkSession 
             ? settings.autoStartBreaks 
             : settings.autoStartPomodoros
 
-          // Tocar som de início se auto-start estiver ativo
+          console.log('Next mode:', nextMode)
+          console.log('Next duration:', nextDuration)
+          console.log('Auto start?', shouldAutoStart)
+
           if (shouldAutoStart) {
             setTimeout(() => {
               if (nextMode === 'work') {
@@ -116,7 +128,7 @@ export function useTimer() {
 
           hasCompletedRef.current = false
 
-          return {
+          const newState = {
             ...prev,
             mode: nextMode,
             timeRemaining: nextDuration * 60,
@@ -124,6 +136,9 @@ export function useTimer() {
             completedPomodoros: newCompletedPomodoros,
             currentSession: prev.currentSession + 1,
           }
+
+          console.log('✅ New state:', newState)
+          return newState
         })
       }, 1000)
     }
