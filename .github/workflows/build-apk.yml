@@ -19,15 +19,15 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: 3. Setup do Node.js (v20)
+    - name: 3. Setup do Node.js (v20.x)
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        cache: 'npm' # Habilita cache para 'npm install'
+        node-version: '20.x' # Usando '20.x' para pegar a versão mais recente do 20
+        cache: 'npm'
 
-    - name: 4. Instalar dependências e Build do PWA
+    - name: 4. Instalar dependências (Clean) e Build do PWA
       run: |
-        npm install
+        npm ci  # <-- MUDANÇA PRINCIPAL: Usa 'npm ci' em vez de 'npm install'
         npm run build # Gera a pasta 'dist'
 
     - name: 5. Instalar Capacitor CLI
@@ -46,3 +46,5 @@ jobs:
       with:
         name: pomodoro-app-debug.apk
         path: android/app/build/outputs/apk/debug/app-debug.apk
+
+
