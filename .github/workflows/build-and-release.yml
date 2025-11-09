@@ -1,0 +1,128 @@
+name: Build PWA and Android APK
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build PWA
+        run: npm run build
+      
+      - name: Upload PWA artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-build
+          path: dist/
+          retention-days: 30
+
+  build-apk:
+    needs: build-pwa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download PWA build
+        uses: actions/download-artifact@v4
+        with:
+          name: pwa-build
+          path: dist/
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      
+      - name: Create Capacitor project
+        run: |
+          npm install -g @capacitor/cli @capacitor/core @capacitor/android
+          
+          cat > capacitor.config.json << 'CAPCONFIG'
+          {
+            "appId": "com.$REPO_NAME.app",
+            "appName": "$REPO_NAME",
+            "webDir": "dist",
+            "server": {
+              "androidScheme": "https"
+            }
+          }
+          CAPCONFIG
+          
+          npx cap add android
+          npx cap sync android
+      
+      - name: Create keystore
+        run: |
+          echo "\${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+          cd ..
+      
+      - name: Sign APK
+        run: |
+          BUILD_TOOLS_VERSION=\$(ls \$ANDROID_SDK_ROOT/build-tools | sort -V | tail -1)
+          \$ANDROID_SDK_ROOT/build-tools/\$BUILD_TOOLS_VERSION/zipalign -v -p 4 \\
+            android/app/build/outputs/apk/release/app-release-unsigned.apk \\
+            app-aligned.apk
+          
+          \$ANDROID_SDK_ROOT/build-tools/\$BUILD_TOOLS_VERSION/apksigner sign \\
+            --ks release.keystore \\
+            --ks-key-alias release \\
+            --ks-pass pass:"\${{ secrets.KEYSTORE_PASSWORD }}" \\
+            --key-pass pass:"\${{ secrets.KEY_PASSWORD }}" \\
+            --out app-signed.apk \\
+            app-aligned.apk
+      
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: app-signed.apk
+          retention-days: 90
+
+  create-release:
+    needs: [build-pwa, build-apk]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app-signed.apk
+          body: |
+            ## 📱 Release \${{ github.ref_name }}
+            
+            ### 🚀 Downloads
+            - Android APK attached
+            
+            ### ✨ Built with GitHub Actions
+        env:
+          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
