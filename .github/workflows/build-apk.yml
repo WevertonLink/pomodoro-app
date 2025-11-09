@@ -1,0 +1,48 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - "main" # Mude para 'master' se seu branch principal for outro
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 1. Checkout do Repositório
+      uses: actions/checkout@v4
+
+    - name: 2. Setup do Java (JDK 17)
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: 3. Setup do Node.js (v20)
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm' # Habilita cache para 'npm install'
+
+    - name: 4. Instalar dependências e Build do PWA
+      run: |
+        npm install
+        npm run build # Gera a pasta 'dist'
+
+    - name: 5. Instalar Capacitor CLI
+      run: npm install -g @capacitor/cli
+
+    - name: 6. Sincronizar PWA com Android
+      run: npx cap sync android # Copia a 'dist' para o projeto nativo
+
+    - name: 7. Build do APK de Debug
+      run: |
+        cd android
+        ./gradlew assembleDebug
+
+    - name: 8. Upload do APK (Artefato)
+      uses: actions/upload-artifact@v4
+      with:
+        name: pomodoro-app-debug.apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk

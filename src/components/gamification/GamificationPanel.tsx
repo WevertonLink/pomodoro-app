@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
-import { Trophy, Target, Zap } from 'lucide-react'
+import { Trophy, Target } from 'lucide-react'
 import { LevelDisplay } from './LevelDisplay'
 import { AchievementList } from './AchievementList'
 import { ChallengeList } from './ChallengeList'
@@ -18,11 +18,8 @@ export function GamificationPanel() {
   } = useGamification()
 
   useEffect(() => {
-    // Verificar achievements ao montar
     checkAchievements()
-    // Gerar desafios diários
     generateDailyChallenges()
-    // Atualizar progresso de desafios
     updateChallengeProgress()
   }, [checkAchievements, generateDailyChallenges, updateChallengeProgress])
 

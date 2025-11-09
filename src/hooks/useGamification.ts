@@ -10,6 +10,7 @@ import {
   unlockedAchievementsAtom,
 } from '../store/gamification-store'
 import { statsAtom } from '../store/stats-store'
+import type { Challenge } from '../types/gamification'
 
 const calculateXPForLevel = (level: number): number => {
   return level * 100 + (level - 1) * 50
@@ -24,7 +25,6 @@ export function useGamification() {
   const [unlockedAchievements] = useAtom(unlockedAchievementsAtom)
   const [stats] = useAtom(statsAtom)
 
-  // Adicionar XP
   const addXP = useCallback((amount: number, reason: string) => {
     setProfile((prev) => {
       let newCurrentXP = prev.currentXP + amount
@@ -32,7 +32,6 @@ export function useGamification() {
       let newXPToNext = prev.xpToNextLevel
       let leveledUp = false
 
-      // Check level up
       while (newCurrentXP >= newXPToNext) {
         newCurrentXP -= newXPToNext
         newLevel++
@@ -42,7 +41,6 @@ export function useGamification() {
 
       const newTitle = getTitleForLevel(newLevel)
 
-      // Se subiu de nível, disparar evento
       if (leveledUp) {
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('levelup', { 
@@ -61,18 +59,16 @@ export function useGamification() {
       }
     })
 
-    // Adicionar ao histórico
     setXPHistory((prev) => [
       {
         amount,
         reason,
         timestamp: new Date().toISOString(),
       },
-      ...prev.slice(0, 49), // Manter últimos 50
+      ...prev.slice(0, 49),
     ])
   }, [setProfile, setXPHistory])
 
-  // Verificar e desbloquear achievements
   const checkAchievements = useCallback(() => {
     const now = new Date()
     const hour = now.getHours()
@@ -86,7 +82,6 @@ export function useGamification() {
 
         let currentProgress = ach.progress
 
-        // Calcular progresso baseado no tipo
         switch (ach.id) {
           case 'first-pomodoro':
           case 'pomodoro-10':
@@ -126,11 +121,9 @@ export function useGamification() {
             break
         }
 
-        // Check se desbloqueou
         if (currentProgress >= ach.maxProgress) {
           xpToAdd += ach.xpReward
           
-          // Disparar evento de achievement
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('achievement', { 
               detail: ach 
@@ -150,7 +143,6 @@ export function useGamification() {
         }
       })
 
-      // Adicionar XP dos achievements desbloqueados
       if (xpToAdd > 0) {
         setTimeout(() => {
           addXP(xpToAdd, 'Achievements desbloqueados')
@@ -161,7 +153,6 @@ export function useGamification() {
     })
   }, [stats, setAchievements, addXP])
 
-  // Gerar desafios diários
   const generateDailyChallenges = useCallback(() => {
     const today = new Date()
     today.setHours(23, 59, 59, 999)
@@ -173,7 +164,7 @@ export function useGamification() {
 
     if (existingDaily) return
 
-    const dailyChallenges: Omit<Challenge, 'progress' | 'completed'>[] = [
+    const dailyChallenges: Challenge[] = [
       {
         id: `daily-pomodoros-${Date.now()}`,
         name: 'Pomodoros Diários',
@@ -182,6 +173,8 @@ export function useGamification() {
         xpReward: 50,
         type: 'daily',
         maxProgress: 4,
+        progress: 0,
+        completed: false,
         expiresAt: today.toISOString(),
       },
       {
@@ -192,17 +185,15 @@ export function useGamification() {
         xpReward: 40,
         type: 'daily',
         maxProgress: 3,
+        progress: 0,
+        completed: false,
         expiresAt: today.toISOString(),
       },
     ]
 
-    setChallenges((prev) => [
-      ...prev,
-      ...dailyChallenges.map(c => ({ ...c, progress: 0, completed: false })),
-    ])
+    setChallenges((prev) => [...prev, ...dailyChallenges])
   }, [challenges, setChallenges])
 
-  // Atualizar progresso de desafios
   const updateChallengeProgress = useCallback(() => {
     const today = new Date().toISOString().split('T')[0]
     const todayStats = stats.dailyStats.find(d => d.date === today)
@@ -224,7 +215,6 @@ export function useGamification() {
         const isCompleted = currentProgress >= challenge.maxProgress
 
         if (isCompleted && !challenge.completed) {
-          // Adicionar XP
           setTimeout(() => {
             addXP(challenge.xpReward, `Desafio: ${challenge.name}`)
           }, 100)

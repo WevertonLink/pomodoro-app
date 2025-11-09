@@ -11,8 +11,6 @@ interface AchievementListProps {
 }
 
 export function AchievementList({ achievements, unlocked }: AchievementListProps) {
-  const locked = achievements.filter(a => !a.unlockedAt)
-  
   const categories = {
     pomodoro: achievements.filter(a => a.category === 'pomodoro'),
     streak: achievements.filter(a => a.category === 'streak'),
