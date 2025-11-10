@@ -53,23 +53,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
       
-      - name: Create Capacitor project
+      - name: Install Capacitor
+        run: npm install @capacitor/cli @capacitor/core @capacitor/android
+      
+      - name: Initialize Capacitor
         run: |
-          npm install -g @capacitor/cli @capacitor/core @capacitor/android
-          
-          cat > capacitor.config.json << 'CAPCONFIG'
-          {
-            "appId": "com.$REPO_NAME.app",
-            "appName": "$REPO_NAME",
-            "webDir": "dist",
-            "server": {
-              "androidScheme": "https"
-            }
-          }
-          CAPCONFIG
-          
+          npx cap init "$REPO_NAME" "com.$REPO_NAME.app" --web-dir=dist
           npx cap add android
-          npx cap sync android
+      
+      - name: Sync Capacitor
+        run: npx cap sync android
       
       - name: Create keystore
         run: |
