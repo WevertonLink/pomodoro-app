@@ -58,6 +58,7 @@ jobs:
       
       - name: Initialize Capacitor
         run: |
+          rm -f capacitor.config.ts capacitor.config.js
           npx cap init "Pomodoro Pro" "com.pomodoro.app" --web-dir=dist
           npx cap add android
       
@@ -129,6 +130,8 @@ jobs:
     needs: build-pwa
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       
@@ -143,4 +146,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
-          cname: pomodoro.seudominio.com  # Opcional
